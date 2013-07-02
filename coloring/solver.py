@@ -33,7 +33,7 @@ class ConstraintStore:
                     change = change or constraint.prune(self.domainStore)
                 else:
                     return False
-            print self
+#            print self
         return True
         
     def getNbSolutions(self):
@@ -41,6 +41,12 @@ class ConstraintStore:
         for domainValue in self.domainStore.variables:
             total *= len(domainValue)
         return total
+        
+    def isFeasible(self):
+        for constraint in self.constraints:
+            if not constraint.isFeasible(self.domainStore):
+                return False
+        return True
         
     def __str__( self ):
         return str(self.domainStore)
@@ -56,7 +62,7 @@ def solveIt(inputData):
     nodeDegrees = [(i,  0) for i in range(0,  int(firstLine[0]))]
     edgeCount = int(firstLine[1])
 
-    cs = ConstraintStore(nodeCount, nodeCount)
+    cs = ConstraintStore(nodeCount, min(17, nodeCount))
     
     for i in range(0,  nodeCount):
         cs.addConstraint(InferiorConstantConstraint(i, i + 1))
@@ -71,13 +77,15 @@ def solveIt(inputData):
         cs.addConstraint(NotEqConstraint(int(parts[0]), int(parts[1])))
 
     nodeDegrees.sort(key=lambda tup: tup[1],  reverse=True)
-    cs.propagate()
+    if not cs.isFeasible():
+        return False
     while cs.getNbSolutions() > 1:
         for node in nodeDegrees:
             domainV = cs.domainStore.getValues(node[0])
             if len(domainV) > 1:
                 cs.addConstraint(EqualConstantConstraint(node[0],  domainV[0]))
-                cs.propagate()
+                if not cs.propagate():
+                    return False
                 continue
                     
     
